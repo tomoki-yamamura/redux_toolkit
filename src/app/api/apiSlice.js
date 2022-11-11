@@ -1,42 +1,41 @@
-import { createApi, fetchBaseQuery, retry } from '@reduxjs/toolkit/query'
-import { logOut, setCredentials } from '../../features/auth/authSlice'
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { setCredentials, logOut } from "../../features/auth/authSlice";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: 'http://localhodt:3500',
-  credentials: 'include',
+  baseUrl: "http://localhost:3500",
+  credentials: "include",
   prepareHeaders: (headers, { getState }) => {
-    const token = getState().auth.token
+    const token = getState().auth.token;
     if (token) {
-      headers.set("authorization", `Bearer ${token}`)
+      headers.set("authorization", `Bearer ${token}`);
     }
-    return headers
-  }
-})
+    return headers;
+  },
+});
 
 const baseQueryWithReauth = async (args, api, extraOptions) => {
-  let result = await baseQuery(args, api, extraOptions)
+  let result = await baseQuery(args, api, extraOptions);
+
   if (result?.error?.originalStatus === 403) {
-    console.log('sending refresh token');
-    // send refresh token toget new access token
-    const refreshResult = await baseQuery('/refresh', api, extraOptions)
+    console.log("sending refresh token");
+    // send refresh token to get new access token
+    const refreshResult = await baseQuery("/refresh", api, extraOptions);
     console.log(refreshResult);
     if (refreshResult?.data) {
-      const user = api.getState().auth.user
+      const user = api.getState().auth.user;
       // store the new token
-      api.dispath(setCredentials({ ...refreshResult.data, user }))
+      api.dispatch(setCredentials({ ...refreshResult.data, user }));
       // retry the original query with new access token
-      result = await baseQuery(args, api, extraOptions)
+      result = await baseQuery(args, api, extraOptions);
     } else {
-      api.dispath(logOut())
+      api.dispatch(logOut());
     }
   }
 
-  return result
-}
+  return result;
+};
 
 export const apiSlice = createApi({
   baseQuery: baseQueryWithReauth,
-  endpoints: builder => ({
-    
-  })
-})
+  endpoints: (builder) => ({}),
+});
